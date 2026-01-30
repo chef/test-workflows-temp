@@ -12,11 +12,6 @@ concurrency:
 
 permissions: {}
 
-defaults:
-  run:
-    working-directory: kitchen-tests
-
-
 jobs:
   workflow_guard:
     if: github.event_name == 'pull_request_target'
