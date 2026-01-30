@@ -43,4 +43,4 @@ jobs:
         run: cat TEST.txt
 
       - name: Ensure access to hab token
-        run: echo ${HAB_AUTH_TOKEN} | wc -c
+        run: echo ${HAB_AUTH_TOKEN}
