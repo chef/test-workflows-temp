@@ -28,7 +28,7 @@ jobs:
     needs: workflow_guard
     permissions:
       contents: read
-    runs-on: ubuntu_latest
+    runs-on: ubuntu-latest
     env:
       FORCE_FFI_YAJL: ext
       CHEF_LICENSE: accept-no-persist
