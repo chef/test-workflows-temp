@@ -21,6 +21,8 @@ jobs:
   workflow_guard:
     if: github.event_name == 'pull_request_target'
     uses: ./.github/workflows/workflow-change-guard.yml
+    permissions:
+      contents: read
 
 
   test:
