@@ -2,18 +2,20 @@ name: workflow-change-guard
 
 on:
   workflow_call:
+    outputs:
+      workflow_changed:
+        description: "Whether workflow files were modified"
+        value: ${{ jobs.detect.outputs.workflow_changed }}
 
 permissions: {}
 
 jobs:
-  guard:
+  detect:
     runs-on: ubuntu-latest
-
-    # This environment requires manual approval
-    environment: workflow-changes
-
     permissions:
       contents: read
+    outputs:
+      workflow_changed: ${{ steps.diff.outputs.changed }}
 
     steps:
       - name: Checkout base branch
@@ -24,18 +26,36 @@ jobs:
           clean: true
 
       - name: Fetch PR head
-        run: |
-          git fetch origin ${{ github.event.pull_request.head.sha }}
+        run: git fetch origin ${{ github.event.pull_request.head.sha }}
+
       - name: Detect workflow file changes
+        id: diff
         run: |
           set -euo pipefail
+
           CHANGED=$(git diff --name-only \
             ${{ github.event.pull_request.base.sha }} \
             ${{ github.event.pull_request.head.sha }} \
             | grep '^.github/workflows/' || true)
-          if [ -z "$CHANGED" ]; then
+
+          if [ -n "$CHANGED" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Workflow files changed:"
+            echo "$CHANGED"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "No workflow changes detected."
-            exit 0
           fi
-          echo "Workflow files changed:"
-          echo "$CHANGED"
+
+  approve:
+    needs: detect
+    if: needs.detect.outputs.workflow_changed == 'true'
+    runs-on: ubuntu-latest
+
+    # 🔒 Approval happens ONLY here
+    environment: workflow-changes
+
+    permissions: {}
+
+    steps:
+      - run: echo "Workflow changes approved"
