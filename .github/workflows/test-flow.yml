@@ -1,0 +1,50 @@
+name: kitchen
+
+on:
+  pull_request_target:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: kitchen-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+defaults:
+  run:
+    working-directory: kitchen-tests
+
+
+jobs:
+  workflow_guard:
+    if: github.event_name == 'pull_request_target'
+    uses: ./.github/workflows/workflow-change-guard.yml
+
+
+  test:
+    needs: workflow_guard
+    permissions:
+      contents: read
+    runs-on: ubuntu_latest
+    env:
+      FORCE_FFI_YAJL: ext
+      CHEF_LICENSE: accept-no-persist
+      HAB_ORIGIN: gha
+      HAB_BLDR_CHANNEL: base-2025
+      HAB_REFRESH_CHANNEL: base-2025
+      HAB_AUTH_TOKEN: ${{ secrets.HAB_AUTH_TOKEN }}
+
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          clean: true
+      - name: Ensure PR code
+        run: cat TEST.txt
+
+      - name: Ensure access to hab token
+        run: echo ${HAB_AUTH_TOKEN} | wc -c

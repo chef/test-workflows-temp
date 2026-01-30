@@ -1,0 +1,41 @@
+name: workflow-change-guard
+
+on:
+  workflow_call:
+
+permissions: {}
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+
+    # This environment requires manual approval
+    environment: workflow-changes
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout base branch
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+          clean: true
+
+      - name: Fetch PR head
+        run: |
+          git fetch origin ${{ github.event.pull_request.head.sha }}
+      - name: Detect workflow file changes
+        run: |
+          set -euo pipefail
+          CHANGED=$(git diff --name-only \
+            ${{ github.event.pull_request.base.sha }} \
+            ${{ github.event.pull_request.head.sha }} \
+            | grep '^.github/workflows/' || true)
+          if [ -z "$CHANGED" ]; then
+            echo "No workflow changes detected."
+            exit 0
+          fi
+          echo "Workflow files changed:"
+          echo "$CHANGED"
